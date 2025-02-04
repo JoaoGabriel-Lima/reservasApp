@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reservas_user/models/address.dart';
+import 'package:reservas_user/models/booking.dart';
 import 'package:reservas_user/models/property.dart';
 import 'package:reservas_user/models/user.dart';
 import 'package:sqflite/sqflite.dart';
@@ -339,6 +340,29 @@ class DatabaseService {
       'UPDATE booking SET rating = ? WHERE id = ?',
       [rating, bookingId],
     );
+  }
+
+  // Obter reservas de um usuário
+  Future<List<Booking>> getBookings(int userId) async {
+    final db = await database;
+    final bookings =
+        await db.rawQuery('SELECT * FROM booking WHERE user_id = ?', [userId]);
+
+    final List<Booking> bookingsList = [];
+    for (var booking in bookings) {
+      bookingsList.add(Booking(
+        id: booking['id'] as int,
+        user_id: booking['user_id'] as int,
+        property_id: booking['property_id'] as int,
+        checkin_date: booking['checkin_date'] as String,
+        checkout_date: booking['checkout_date'] as String,
+        total_days: booking['total_days'] as int,
+        total_price: booking['total_price'] as double,
+        amount_guests: booking['amount_guest'] as int,
+        rating: booking['rating'] != null ? booking['rating'] as double : 0.0,
+      ));
+    }
+    return bookingsList;
   }
 
   Future<int> removeBooking({required int bookingId}) async {

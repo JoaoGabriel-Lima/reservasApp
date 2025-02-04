@@ -123,6 +123,16 @@ class _ListaPropriedadesState extends State<ListaPropriedades> {
                   backgroundColor: Colors.blue,
                   child: Icon(Icons.person, size: 40)),
             ),
+            if (_currentUser != null)
+              ListTile(
+                leading: const Icon(Icons.book),
+                title: const Text('Minhas Reservas'),
+                onTap: () {
+                  Navigator.pushNamed(context, '/minhasreservas', arguments: {
+                    'userId': _currentUser.id,
+                  });
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.exit_to_app),
               title: const Text('Sair'),

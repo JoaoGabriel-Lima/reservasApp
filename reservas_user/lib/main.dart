@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reservas_user/routes/alugar/detalhesPropriedade.dart';
 import 'package:reservas_user/routes/alugar/listaPropriedades.dart';
+import 'package:reservas_user/routes/alugar/minhasReservas.dart';
 import 'package:reservas_user/routes/cadastro.dart';
 import 'package:reservas_user/routes/login.dart';
 import 'package:sqflite/sqflite.dart';
@@ -31,6 +32,7 @@ Future main() async {
   runApp(MaterialApp(
     title: "AJY Reservas",
     darkTheme: ThemeData(
+      useMaterial3: true,
       brightness: Brightness.dark,
       primarySwatch: Colors.blue,
       primaryColor: Colors.blue[600],
@@ -110,6 +112,7 @@ Future main() async {
       Cadastro.route: (context) => const Cadastro(),
       ListaPropriedades.route: (context) => const ListaPropriedades(),
       DetalhesPropriedade.route: (context) => const DetalhesPropriedade(),
+      MinhasReservas.route: (context) => const MinhasReservas(),
     },
   ));
 }

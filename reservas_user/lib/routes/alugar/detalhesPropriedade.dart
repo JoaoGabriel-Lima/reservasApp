@@ -63,6 +63,19 @@ class _DetalhesPropriedadeState extends State<DetalhesPropriedade> {
           content: Text("Preencha todos os campos corretamente.")));
       return;
     }
+    if (amountGuest > property!.max_guest) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Número de hóspedes excede o limite da propriedade.")));
+      return;
+    }
+
+    if (checkout.isBefore(checkin)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text("Data de check-out deve ser após a data de check-in.")));
+      return;
+    }
+
     setState(() {
       _loadingReservation = true;
     });
@@ -103,6 +116,17 @@ class _DetalhesPropriedadeState extends State<DetalhesPropriedade> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            // Compute final value if possible
+            DateTime? checkin = DateTime.tryParse(_checkinController.text);
+            DateTime? checkout = DateTime.tryParse(_checkoutController.text);
+            double? finalValue;
+            if (checkin != null &&
+                checkout != null &&
+                checkout.isAfter(checkin)) {
+              int nights = checkout.difference(checkin).inDays;
+              if (nights < 1) nights = 1;
+              finalValue = nights * (property?.price ?? 0);
+            }
             return AlertDialog(
               title: const Text("Faça sua reserva"),
               content: SingleChildScrollView(
@@ -114,7 +138,10 @@ class _DetalhesPropriedadeState extends State<DetalhesPropriedade> {
                       readOnly: true,
                       decoration: const InputDecoration(
                           labelText: 'Check-in (AAAA-MM-DD)'),
-                      onTap: () => _selectDate(_checkinController),
+                      onTap: () async {
+                        await _selectDate(_checkinController);
+                        setStateDialog(() {});
+                      },
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -122,7 +149,10 @@ class _DetalhesPropriedadeState extends State<DetalhesPropriedade> {
                       readOnly: true,
                       decoration: const InputDecoration(
                           labelText: 'Check-out (AAAA-MM-DD)'),
-                      onTap: () => _selectDate(_checkoutController),
+                      onTap: () async {
+                        await _selectDate(_checkoutController);
+                        setStateDialog(() {});
+                      },
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -130,6 +160,13 @@ class _DetalhesPropriedadeState extends State<DetalhesPropriedade> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(labelText: 'Pessoas'),
                     ),
+                    const SizedBox(height: 16),
+                    if (finalValue != null)
+                      Text(
+                        "Valor Final: R\$${finalValue.toStringAsFixed(2)}",
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                   ],
                 ),
               ),
