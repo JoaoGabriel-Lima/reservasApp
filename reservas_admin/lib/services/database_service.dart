@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
+import 'package:reservas_admin/models/address.dart';
 import 'package:reservas_admin/models/property.dart';
 import 'package:reservas_admin/models/user.dart';
 import 'package:path_provider/path_provider.dart';
@@ -283,10 +284,51 @@ class DatabaseService {
     });
   }
 
+  // get address by id
+  Future<Address> getAddress(int address_id) async {
+    final db = await database;
+    final address =
+        await db.rawQuery('SELECT * FROM address WHERE id = ?', [address_id]);
+
+    if (address.isNotEmpty) {
+      return Address(
+          id: address[0]['id'] as int,
+          cep: address[0]['cep'] as String,
+          logradouro: address[0]['logradouro'] as String,
+          bairro: address[0]['bairro'] as String,
+          localidade: address[0]['localidade'] as String,
+          uf: address[0]['uf'] as String,
+          estado: address[0]['estado'] as String);
+    }
+    throw Exception('Endereço não encontrado');
+  }
+
+  // Obter propriedade por id
+  Future<Property> getPropertyById(int propertyId) async {
+    final db = await database;
+    final result =
+        await db.rawQuery('SELECT * FROM property WHERE id = ?', [propertyId]);
+    if (result.isEmpty) throw Exception('Propriedade não encontrada');
+    final property = result.first;
+    return Property(
+      id: property['id'] as int,
+      user_id: property['user_id'] as int,
+      address_id: property['address_id'] as int,
+      title: property['title'] as String,
+      description: property['description'] as String,
+      number: property['number'] as int,
+      complement: property['complement'] != null
+          ? property['complement'] as String
+          : "",
+      price: property['price'] as double,
+      max_guest: property['max_guest'] as int,
+      thumbnail: property['thumbnail'] as String,
+    );
+  }
+
   // Editar propriedade
   Future<void> editProperty({
     required int propertyId,
-    required int userId,
     required String cep,
     required String logradouro,
     required String bairro,
@@ -300,7 +342,7 @@ class DatabaseService {
     required double price,
     required int max_guest,
     required String thumbnail,
-    required List<String> images,
+    // required List<String> images,
   }) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -308,39 +350,53 @@ class DatabaseService {
         'SELECT address_id FROM property WHERE id = ?',
         [propertyId],
       );
-      if (propertyRow.isEmpty) throw Exception('Property not found');
+      if (propertyRow.isEmpty) throw Exception('Propriedade não encontrada');
       final addressId = propertyRow.first['address_id'] as int;
 
-      await txn.rawUpdate(
-        'UPDATE address SET cep = ?, logradouro = ?, bairro = ?, localidade = ?, uf = ?, estado = ? WHERE id = ?',
-        [cep, logradouro, bairro, localidade, uf, estado, addressId],
-      );
+      print("cheguei aqui 1");
+      final addressCepResult = await txn
+          .rawQuery('SELECT cep FROM address WHERE id = ?', [addressId]);
+      String oldCep = addressCepResult.first['cep'] as String;
 
+      if (cep != oldCep) {
+        final address =
+            await txn.rawQuery('SELECT id FROM address WHERE cep = ?', [cep]);
+        if (address.isNotEmpty) {
+          await txn.rawUpdate('UPDATE property SET address_id = ? WHERE id = ?',
+              [address.first['id'], propertyId]);
+        } else {
+          int new_address_id = await txn.rawInsert(
+              'INSERT INTO address(cep, logradouro, bairro, localidade, uf, estado) VALUES(?, ?, ?, ?, ?, ?)',
+              [cep, logradouro, bairro, localidade, uf, estado]);
+          await txn.rawUpdate('UPDATE property SET address_id = ? WHERE id = ?',
+              [new_address_id, propertyId]);
+        }
+      }
+      print("cheguei aqui 2");
       await txn.rawUpdate(
-        'UPDATE property SET user_id = ?, title = ?, description = ?, number = ?, complement = ?, price = ?, max_guest = ?, thumbnail = ? WHERE id = ?',
+        'UPDATE property SET title = ?, description = ?, number = ?, complement = ?, price = ?, max_guest = ?, thumbnail = ? WHERE id = ?',
         [
-          userId,
           title,
           description,
           number,
           complement,
           price,
           max_guest,
-          thumbnail,
+          thumbnail.trim() == '' ? 'image_path' : thumbnail,
           propertyId
         ],
       );
 
-      await txn.rawDelete(
-        'DELETE FROM images WHERE property_id = ?',
-        [propertyId],
-      );
-      for (var image in images) {
-        await txn.rawInsert(
-          'INSERT INTO images(property_id, path) VALUES(?, ?)',
-          [propertyId, image],
-        );
-      }
+      // await txn.rawDelete(
+      //   'DELETE FROM images WHERE property_id = ?',
+      //   [propertyId],
+      // );
+      // for (var image in images) {
+      //   await txn.rawInsert(
+      //     'INSERT INTO images(property_id, path) VALUES(?, ?)',
+      //     [propertyId, image],
+      //   );
+      // }
     });
   }
 }

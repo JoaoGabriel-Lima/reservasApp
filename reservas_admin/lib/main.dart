@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reservas_admin/routes/anunciar/cadastrar_propriedade.dart';
+import 'package:reservas_admin/routes/anunciar/editar_propriedade.dart';
 import 'package:reservas_admin/routes/anunciar/minhas_propriedades.dart';
 import 'package:reservas_admin/routes/login.dart';
 import 'package:sqflite/sqflite.dart';
@@ -33,6 +34,7 @@ Future main() async {
       Login.route: (context) => const Login(),
       MinhasPropriedades.route: (context) => const MinhasPropriedades(),
       CadastrarPropriedade.route: (context) => const CadastrarPropriedade(),
+      EditarPropriedade.route: (context) => const EditarPropriedade(),
     },
   ));
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:reservas_admin/models/user.dart';
 import 'package:reservas_admin/models/property.dart';
 import 'package:reservas_admin/routes/anunciar/cadastrar_propriedade.dart';
+import 'package:reservas_admin/routes/anunciar/editar_propriedade.dart';
 import 'package:reservas_admin/services/database_service.dart';
 
 class MinhasPropriedades extends StatefulWidget {
@@ -176,8 +177,11 @@ class _MinhasPropriedadesState extends State<MinhasPropriedades> {
                               child: InkWell(
                                 onTap: () {
                                   Navigator.pushNamed(
-                                      context, '/propertyDetail',
-                                      arguments: property);
+                                      context, EditarPropriedade.route,
+                                      arguments: {
+                                        'user': _currentUser,
+                                        'propertyId': property.id
+                                      });
                                 },
                                 child: Row(
                                   children: [
