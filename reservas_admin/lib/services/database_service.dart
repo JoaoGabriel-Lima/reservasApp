@@ -179,9 +179,6 @@ class DatabaseService {
   Future<User> login(String email, String password) async {
     final db = await database;
 
-    final allUsers = await db.rawQuery('SELECT * FROM user');
-    print(allUsers);
-
     final user = await db.rawQuery(
         'SELECT * FROM user WHERE email = ? AND password = ?',
         [email, password]);
