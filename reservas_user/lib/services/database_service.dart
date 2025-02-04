@@ -197,87 +197,24 @@ class DatabaseService {
     throw Exception('Usuário não encontrado');
   }
 
-  // Adicionar propriedade
-  Future<Property> addProperty(
-      int user_id,
-      String cep,
-      String logradouro,
-      String bairro,
-      String localidade,
-      String uf,
-      String estado,
-      String title,
-      String description,
-      int number,
-      String complement,
-      double price,
-      int max_guest,
-      String thumbnail) async {
+  // get rating average of a property by id
+  Future<double> getRating(int property_id) async {
     final db = await database;
-    int property_id = 0;
-    int address_id = 0;
-    await db.transaction((txn) async {
-      // find address BY CEP, if not found, insert new address, and get the address_id, else get the address_id
+    final result = await db.rawQuery(
+        'SELECT AVG(rating) as rating FROM booking WHERE property_id = ?',
+        [property_id]);
 
-      final address =
-          await txn.rawQuery('SELECT id FROM address WHERE cep = ?', [cep]);
-
-      if (address.isNotEmpty) {
-        address_id = address.first['id'] as int;
-      } else {
-        address_id = await txn.rawInsert(
-            'INSERT INTO address(cep, logradouro, bairro, localidade, uf, estado) VALUES(?, ?, ?, ?, ?, ?)',
-            [cep, logradouro, bairro, localidade, uf, estado]);
-      }
-
-      property_id = await txn.rawInsert(
-          'INSERT INTO property(user_id, address_id, title, description, number, complement, price, max_guest, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            user_id,
-            address_id,
-            title,
-            description,
-            number,
-            complement,
-            price,
-            max_guest,
-            thumbnail.trim() == '' ? 'image_path' : thumbnail
-          ]);
-    });
-
-    return Property(
-        id: property_id,
-        user_id: user_id,
-        address_id: address_id,
-        title: title,
-        description: description,
-        number: number,
-        complement: complement,
-        price: price,
-        max_guest: max_guest,
-        thumbnail: thumbnail);
+    if (result[0]['rating'] == null) return 0.0;
+    return result[0]['rating'] as double;
   }
 
-  // Adicionar imagens a uma propriedade
-  Future<void> addImages(int property_id, List<String> images) async {
+  Future<List<Property>> getProperties() async {
     final db = await database;
-    await db.transaction((txn) async {
-      for (var image in images) {
-        await txn.rawInsert(
-            'INSERT INTO images(property_id, path) VALUES(?, ?)',
-            [property_id, image]);
-      }
-    });
-  }
-
-  // Obter todas as propriedades de um usuário
-  Future<List<Property>> getProperties(int user_id) async {
-    final db = await database;
-    final properties = await db
-        .rawQuery('SELECT * FROM property WHERE user_id = ?', [user_id]);
+    final properties = await db.rawQuery('SELECT * FROM property');
 
     final List<Property> propertiesList = [];
     for (var property in properties) {
+      final double rating = await getRating(property['id'] as int);
       propertiesList.add(Property(
           id: property['id'] as int,
           user_id: property['user_id'] as int,
@@ -290,7 +227,8 @@ class DatabaseService {
               : "",
           price: property['price'] as double,
           max_guest: property['max_guest'] as int,
-          thumbnail: property['thumbnail'] as String));
+          thumbnail: property['thumbnail'] as String,
+          rating: rating));
     }
     return propertiesList;
   }
@@ -306,21 +244,6 @@ class DatabaseService {
       imagesList.add(image['path'] as String);
     }
     return imagesList;
-  }
-
-  // Remover propriedade
-  Future<void> removeProperty(int propertyId) async {
-    final db = await database;
-    await db.transaction((txn) async {
-      final property = await txn.rawQuery(
-          'SELECT address_id FROM property WHERE id = ?', [propertyId]);
-
-      if (property.isNotEmpty) {
-        await txn.rawDelete(
-            'DELETE FROM images WHERE property_id = ?', [propertyId]);
-        await txn.rawDelete('DELETE FROM property WHERE id = ?', [propertyId]);
-      }
-    });
   }
 
   // get address by id
@@ -349,6 +272,7 @@ class DatabaseService {
         await db.rawQuery('SELECT * FROM property WHERE id = ?', [propertyId]);
     if (result.isEmpty) throw Exception('Propriedade não encontrada');
     final property = result.first;
+    final double rating = await getRating(property['id'] as int);
     return Property(
       id: property['id'] as int,
       user_id: property['user_id'] as int,
@@ -362,78 +286,64 @@ class DatabaseService {
       price: property['price'] as double,
       max_guest: property['max_guest'] as int,
       thumbnail: property['thumbnail'] as String,
+      rating: rating,
     );
   }
 
-  // Editar propriedade
-  Future<void> editProperty({
-    required int propertyId,
-    required String cep,
-    required String logradouro,
-    required String bairro,
-    required String localidade,
-    required String uf,
-    required String estado,
-    required String title,
-    required String description,
-    required int number,
-    String? complement,
-    required double price,
-    required int max_guest,
-    required String thumbnail,
-    // required List<String> images,
+  Future<List<Property>> searchProperties({
+    String? uf,
+    String? cidade,
+    String? bairro,
+    DateTime? checkin,
+    DateTime? checkout,
+    int? amountGuest,
   }) async {
     final db = await database;
-    await db.transaction((txn) async {
-      final propertyRow = await txn.rawQuery(
-        'SELECT address_id FROM property WHERE id = ?',
-        [propertyId],
-      );
-      if (propertyRow.isEmpty) throw Exception('Propriedade não encontrada');
-      final addressId = propertyRow.first['address_id'] as int;
-
-      final addressCepResult = await txn
-          .rawQuery('SELECT cep FROM address WHERE id = ?', [addressId]);
-      String oldCep = addressCepResult.first['cep'] as String;
-
-      if (cep != oldCep) {
-        final address =
-            await txn.rawQuery('SELECT id FROM address WHERE cep = ?', [cep]);
-        if (address.isNotEmpty) {
-          await txn.rawUpdate('UPDATE property SET address_id = ? WHERE id = ?',
-              [address.first['id'], propertyId]);
-        } else {
-          int new_address_id = await txn.rawInsert(
-              'INSERT INTO address(cep, logradouro, bairro, localidade, uf, estado) VALUES(?, ?, ?, ?, ?, ?)',
-              [cep, logradouro, bairro, localidade, uf, estado]);
-          await txn.rawUpdate('UPDATE property SET address_id = ? WHERE id = ?',
-              [new_address_id, propertyId]);
-        }
-      }
-      await txn.rawUpdate(
-        'UPDATE property SET title = ?, description = ?, number = ?, complement = ?, price = ?, max_guest = ?, thumbnail = ? WHERE id = ?',
-        [
-          title,
-          description,
-          number,
-          complement,
-          price,
-          max_guest,
-          thumbnail.trim() == '' ? 'image_path' : thumbnail,
-          propertyId
-        ],
-      );
-
-      // await txn.rawDelete(
-      //   'DELETE FROM images WHERE property_id = ?',
-      //   [propertyId],
-      // );
-      // for (var image in images) {
-      //   await txn.rawInsert(
-      //     'INSERT INTO images(property_id, path) VALUES(?, ?)',
-      //     [propertyId, image],
-      //   );
-      // }
-    });
+    List<String> conditions = [];
+    List<dynamic> args = [];
+    if (uf != null && uf.isNotEmpty) {
+      conditions.add("address.uf = ?");
+      args.add(uf);
+    }
+    if (cidade != null && cidade.isNotEmpty) {
+      conditions.add("address.localidade = ?");
+      args.add(cidade);
+    }
+    if (bairro != null && bairro.isNotEmpty) {
+      conditions.add("address.bairro = ?");
+      args.add(bairro);
+    }
+    if (amountGuest != null) {
+      conditions.add("property.max_guest >= ?");
+      args.add(amountGuest);
+    }
+    // Note: os filtros de check-in e check-out não são aplicados nesta query.
+    final whereClause =
+        conditions.isNotEmpty ? "WHERE " + conditions.join(" AND ") : "";
+    final results = await db.rawQuery('''
+      SELECT property.*
+      FROM property
+      JOIN address ON property.address_id = address.id
+      $whereClause
+    ''', args);
+    List<Property> propertiesList = [];
+    for (var property in results) {
+      final double rating = await getRating(property['id'] as int);
+      propertiesList.add(Property(
+          id: property['id'] as int,
+          user_id: property['user_id'] as int,
+          address_id: property['address_id'] as int,
+          title: property['title'] as String,
+          description: property['description'] as String,
+          number: property['number'] as int,
+          complement: property['complement'] != null
+              ? property['complement'] as String
+              : "",
+          price: property['price'] as double,
+          max_guest: property['max_guest'] as int,
+          thumbnail: property['thumbnail'] as String,
+          rating: rating));
+    }
+    return propertiesList;
   }
 }

@@ -9,6 +9,7 @@ class Property {
   final double price;
   final int max_guest;
   final String thumbnail;
+  double rating = 0.0;
 
   Property(
       {required this.id,
@@ -20,5 +21,6 @@ class Property {
       required this.complement,
       required this.price,
       required this.max_guest,
-      required this.thumbnail});
+      required this.thumbnail,
+      this.rating = 0.0});
 }

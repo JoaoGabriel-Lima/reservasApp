@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reservas_user/models/user.dart';
+import 'package:reservas_user/routes/alugar/listaPropriedades.dart';
 
 import 'package:reservas_user/services/database_service.dart';
 
@@ -23,8 +24,8 @@ class _LoginState extends State<Login> {
         _passwordController.text,
       );
       if (!mounted) return;
-      // Navigator.of(context).pushReplacementNamed(MinhasPropriedades.route,
-      //     arguments: usuarioLogado);
+      Navigator.of(context).pushReplacementNamed(ListaPropriedades.route,
+          arguments: usuarioLogado);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,7 +41,7 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Login - AJY Reservas'),
+          title: const Text('AJY Reservas'),
           // backgroundColor: Colors.deepPurple,
           // foregroundColor: Colors.white,
           titleTextStyle: const TextStyle(
@@ -57,7 +58,7 @@ class _LoginState extends State<Login> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Faça login para continuar no AJY Reservas',
+                        'Faça login para alugar no AJY Reservas',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 30,
@@ -116,6 +117,21 @@ class _LoginState extends State<Login> {
                         ),
                         child: const Text(
                           'Clique aqui para se cadastrar',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16.0),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed(
+                              ListaPropriedades.route,
+                              arguments: null);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text(
+                          'Continuar sem uma conta',
                           textAlign: TextAlign.center,
                         ),
                       ),
