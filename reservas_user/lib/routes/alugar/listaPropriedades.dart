@@ -165,14 +165,40 @@ class _ListaPropriedadesState extends State<ListaPropriedades> {
                     Expanded(
                         child: TextField(
                             controller: _checkinController,
-                            decoration: const InputDecoration(
-                                labelText: 'Check-in (AAAA-MM-DD'))),
+                            readOnly: true,
+                            decoration:
+                                const InputDecoration(labelText: 'Check-in'),
+                            onTap: () async {
+                              DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                _checkinController.text =
+                                    picked.toIso8601String().substring(0, 10);
+                              }
+                            })),
                     const SizedBox(width: 8),
                     Expanded(
                         child: TextField(
                             controller: _checkoutController,
-                            decoration: const InputDecoration(
-                                labelText: 'Check-out (AAAA-MM-DD'))),
+                            readOnly: true,
+                            decoration:
+                                const InputDecoration(labelText: 'Check-out'),
+                            onTap: () async {
+                              DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                _checkoutController.text =
+                                    picked.toIso8601String().substring(0, 10);
+                              }
+                            })),
                     const SizedBox(width: 8),
                     Expanded(
                         child: TextField(
@@ -262,7 +288,10 @@ class _ListaPropriedadesState extends State<ListaPropriedades> {
                                     Navigator.pushNamed(
                                       context,
                                       '/propriedades/detalhes', // página detalhes da propriedade
-                                      arguments: property,
+                                      arguments: {
+                                        'propertyId': property.id,
+                                        'userId': _currentUser.id,
+                                      },
                                     );
                                   }
                                 },

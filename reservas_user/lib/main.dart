@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:reservas_user/routes/alugar/detalhesPropriedade.dart';
 import 'package:reservas_user/routes/alugar/listaPropriedades.dart';
 import 'package:reservas_user/routes/cadastro.dart';
 import 'package:reservas_user/routes/login.dart';
@@ -108,6 +109,7 @@ Future main() async {
       Login.route: (context) => const Login(),
       Cadastro.route: (context) => const Cadastro(),
       ListaPropriedades.route: (context) => const ListaPropriedades(),
+      DetalhesPropriedade.route: (context) => const DetalhesPropriedade(),
     },
   ));
 }

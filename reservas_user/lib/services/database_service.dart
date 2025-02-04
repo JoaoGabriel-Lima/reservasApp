@@ -290,6 +290,65 @@ class DatabaseService {
     );
   }
 
+  Future<int> bookProperty({
+    required int userId,
+    required int propertyId,
+    required DateTime checkin,
+    required DateTime checkout,
+    required int amountGuest,
+  }) async {
+    final db = await database;
+    final property = await getPropertyById(propertyId);
+    final totalDays = checkout.difference(checkin).inDays;
+    final totalPrice = property.price * totalDays;
+    final checkinStr = checkin.toIso8601String();
+    final checkoutStr = checkout.toIso8601String();
+
+    // Check for overlapping bookings
+    final overlappingBookings = await db.rawQuery('''
+      SELECT * FROM booking 
+      WHERE property_id = ? 
+        AND checkin_date < ? 
+        AND checkout_date > ?
+      ''', [propertyId, checkoutStr, checkinStr]);
+    if (overlappingBookings.isNotEmpty) {
+      throw Exception('Esta propriedade já está alugada');
+    }
+
+    final bookingId = await db.rawInsert('''
+      INSERT INTO booking(user_id, property_id, checkin_date, checkout_date, total_days, total_price, amount_guest, rating)
+      VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      userId,
+      propertyId,
+      checkinStr,
+      checkoutStr,
+      totalDays,
+      totalPrice,
+      amountGuest,
+      null
+    ]);
+
+    return bookingId;
+  }
+
+  Future<int> rateBooking(
+      {required int bookingId, required double rating}) async {
+    final db = await database;
+    return await db.rawUpdate(
+      'UPDATE booking SET rating = ? WHERE id = ?',
+      [rating, bookingId],
+    );
+  }
+
+  Future<int> removeBooking({required int bookingId}) async {
+    final db = await database;
+    return await db.rawDelete(
+      'DELETE FROM booking WHERE id = ?',
+      [bookingId],
+    );
+  }
+
   Future<List<Property>> searchProperties({
     String? uf,
     String? cidade,
@@ -317,9 +376,35 @@ class DatabaseService {
       conditions.add("property.max_guest >= ?");
       args.add(amountGuest);
     }
-    // Note: os filtros de check-in e check-out não são aplicados nesta query.
-    final whereClause =
+
+    // Compute a one-day interval if only one date is provided.
+    DateTime? desiredCheckin;
+    DateTime? desiredCheckout;
+    if (checkin != null && checkout != null) {
+      desiredCheckin = checkin;
+      desiredCheckout = checkout;
+    } else if (checkin != null) {
+      desiredCheckin = checkin;
+      desiredCheckout = checkin.add(const Duration(days: 1));
+    } else if (checkout != null) {
+      desiredCheckin = checkout;
+      desiredCheckout = checkout.add(const Duration(days: 1));
+    }
+
+    String whereClause =
         conditions.isNotEmpty ? "WHERE " + conditions.join(" AND ") : "";
+    // Add exclusion clause for booking interval if at least one date is provided.
+    if (desiredCheckin != null && desiredCheckout != null) {
+      final bookingCondition =
+          "property.id NOT IN (SELECT property_id FROM booking WHERE (checkin_date < ? AND checkout_date > ?))";
+      if (whereClause.isEmpty) {
+        whereClause = "WHERE " + bookingCondition;
+      } else {
+        whereClause = "$whereClause AND $bookingCondition";
+      }
+      args.add(desiredCheckout.toIso8601String());
+      args.add(desiredCheckin.toIso8601String());
+    }
     final results = await db.rawQuery('''
       SELECT property.*
       FROM property
