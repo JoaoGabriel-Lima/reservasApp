@@ -353,7 +353,6 @@ class DatabaseService {
       if (propertyRow.isEmpty) throw Exception('Propriedade não encontrada');
       final addressId = propertyRow.first['address_id'] as int;
 
-      print("cheguei aqui 1");
       final addressCepResult = await txn
           .rawQuery('SELECT cep FROM address WHERE id = ?', [addressId]);
       String oldCep = addressCepResult.first['cep'] as String;
@@ -372,7 +371,6 @@ class DatabaseService {
               [new_address_id, propertyId]);
         }
       }
-      print("cheguei aqui 2");
       await txn.rawUpdate(
         'UPDATE property SET title = ?, description = ?, number = ?, complement = ?, price = ?, max_guest = ?, thumbnail = ? WHERE id = ?',
         [

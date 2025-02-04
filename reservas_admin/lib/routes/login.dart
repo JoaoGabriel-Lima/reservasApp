@@ -42,6 +42,7 @@ class _LoginState extends State<Login> {
         appBar: AppBar(
           title: const Text('Login - AJY Reservas'),
           backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
           titleTextStyle: const TextStyle(
               fontSize: 20.0, fontWeight: FontWeight.w400, color: Colors.white),
         ),
@@ -107,7 +108,7 @@ class _LoginState extends State<Login> {
                   const SizedBox(height: 8.0),
                   OutlinedButton(
                     onPressed: () {
-                      // Add your sign-up logic here
+                      Navigator.of(context).pushNamed('/cadastro');
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),

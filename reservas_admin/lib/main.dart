@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:reservas_admin/routes/anunciar/cadastrar_propriedade.dart';
 import 'package:reservas_admin/routes/anunciar/editar_propriedade.dart';
 import 'package:reservas_admin/routes/anunciar/minhas_propriedades.dart';
+import 'package:reservas_admin/routes/cadastro.dart';
 import 'package:reservas_admin/routes/login.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -32,6 +33,7 @@ Future main() async {
     initialRoute: Login.route,
     routes: {
       Login.route: (context) => const Login(),
+      Cadastro.route: (context) => const Cadastro(),
       MinhasPropriedades.route: (context) => const MinhasPropriedades(),
       CadastrarPropriedade.route: (context) => const CadastrarPropriedade(),
       EditarPropriedade.route: (context) => const EditarPropriedade(),

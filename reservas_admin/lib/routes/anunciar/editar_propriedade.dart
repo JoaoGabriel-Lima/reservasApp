@@ -3,6 +3,7 @@ import 'package:reservas_admin/models/address.dart';
 import 'package:reservas_admin/models/property.dart';
 import 'package:reservas_admin/models/user.dart';
 import 'package:reservas_admin/services/database_service.dart';
+import 'package:reservas_admin/services/via_cep_service.dart';
 
 class EditarPropriedade extends StatefulWidget {
   const EditarPropriedade({super.key});
@@ -110,6 +111,26 @@ class _EditarPropriedadeState extends State<EditarPropriedade> {
     }
   }
 
+  Future<void> _fetchCep() async {
+    try {
+      final address = await ViaCepService().viaCep(_cepController.text);
+      setState(() {
+        _logradouroController.text = address.logradouro;
+        _bairroController.text = address.bairro;
+        _localidadeController.text = address.localidade;
+        _ufController.text = address.uf;
+        _estadoController.text = address.estado;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Endereço preenchido automaticamente!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao buscar CEP: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _cepController.dispose();
@@ -152,6 +173,11 @@ class _EditarPropriedadeState extends State<EditarPropriedade> {
                       validator: (value) => value == null || value.isEmpty
                           ? 'Informe o CEP'
                           : null,
+                    ),
+                    // Botão para buscar CEP
+                    ElevatedButton(
+                      onPressed: _fetchCep,
+                      child: const Text('Buscar CEP'),
                     ),
                     TextFormField(
                       controller: _logradouroController,
