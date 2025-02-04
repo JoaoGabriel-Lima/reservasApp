@@ -21,6 +21,13 @@ Future main() async {
       databaseFactory = databaseFactoryFfi;
       sqfliteFfiInit();
     }
+
+    if (Platform.isAndroid) {
+      // Initialize FFI
+      print("Initialized");
+      // databaseFactory = databaseFactoryFfi;
+      sqfliteFfiInit();
+    }
   }
   runApp(MaterialApp(
     title: "AJY Reservas",
